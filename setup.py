@@ -2,7 +2,7 @@ from setuptools import find_packages, setup
 
 setup(
     name="aiolookin",
-    version="0.1.0",
+    version="0.1.1",
     url="https://github.com/ANMalko/aiolookin",
     author="Anton Malko",
     author_email="antonmalko@mail.ru",

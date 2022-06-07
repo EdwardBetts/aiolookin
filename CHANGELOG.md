@@ -5,6 +5,12 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [0.1.1]
+### Changed
+- Update `LookInHttpProtocol` to fix a bug with `ServerDisconnectedError`
+
+
 ## [0.1.0]
 ### Changed
 - Remove `mrdc` property from `Device` model
@@ -35,7 +41,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Init commit
 
 
-[Unreleased]: https://github.com/ANMalko/aiolookin/compare/main...v0.1.0
+[Unreleased]: https://github.com/ANMalko/aiolookin/compare/main...v0.1.1
+[0.1.1]: https://github.com/ANMalko/aiolookin/compare/v0.1.1...v0.1.0
 [0.1.0]: https://github.com/ANMalko/aiolookin/compare/v0.0.4...v0.1.0
 [0.0.4]: https://github.com/ANMalko/aiolookin/compare/v0.0.3...v0.0.4
 [0.0.3]: https://github.com/ANMalko/aiolookin/compare/v0.0.2...v0.0.3
