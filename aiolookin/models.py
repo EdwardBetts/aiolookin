@@ -16,6 +16,7 @@ __all__ = (
     "UDPCommand",
     "UDPCommandType",
     "UDPEvent",
+    "MediaSource",
 )
 
 
@@ -239,3 +240,14 @@ class UDPEvent:
                 self.uuid = data_package
             else:
                 self.uuid, _ = data_package.split(":")
+
+
+@dataclass
+class MediaSource:
+    operand: str = field(init=False)
+    protocol: str = field(init=False)
+    _data: InitVar[dict[str, str]]
+
+    def __post_init__(self, _data: dict[str, str]) -> None:
+        self.operand = _data["Operand"]
+        self.protocol = _data["Protocol"]

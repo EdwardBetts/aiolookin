@@ -1,12 +1,14 @@
 from __future__ import annotations
 
+from typing import Any
+
 import pytest
 
 from aiolookin.protocol import LookInHttpProtocol
 
 
 @pytest.fixture
-def lookin_http_protocol(faker):
+def lookin_http_protocol():
     def wrapper(test_client):
         return LookInHttpProtocol(
             session=test_client.session,
@@ -17,8 +19,8 @@ def lookin_http_protocol(faker):
 
 
 @pytest.fixture
-def get_info_response(faker) -> dict[str, str]:
-    yield {
+def get_info_response() -> dict[str, str]:
+    return {
         "Type": "Remote",
         "MRDC": "02000105001K17E3",
         "Status": "Running",
@@ -37,8 +39,8 @@ def get_info_response(faker) -> dict[str, str]:
 
 
 @pytest.fixture
-def get_meteo_sensor_response(faker) -> dict[str, str]:
-    yield {
+def get_meteo_sensor_response() -> dict[str, str]:
+    return {
         "Humidity": "38.6",
         "Pressure": "99649.6",
         "Temperature": "24.6",
@@ -47,8 +49,8 @@ def get_meteo_sensor_response(faker) -> dict[str, str]:
 
 
 @pytest.fixture
-def get_devices_response(faker) -> dict[str, str]:
-    yield [
+def get_devices_response() -> list[dict[str, str]]:
+    return [
         {"Type": "01", "UUID": "49C2", "Updated": "1630089608"},
         {"Type": "03", "UUID": "703A", "Updated": "1631862703"},
         {"Type": "06", "UUID": "AE74", "Updated": "1632039732"},
@@ -60,8 +62,8 @@ def get_devices_response(faker) -> dict[str, str]:
 
 
 @pytest.fixture
-def get_device_response(faker) -> dict[str, str]:
-    yield {
+def get_device_response() -> dict[str, Any]:
+    return {
         "Type": "07",
         "Name": "Fan",
         "Updated": "1632129287",
@@ -75,8 +77,8 @@ def get_device_response(faker) -> dict[str, str]:
 
 
 @pytest.fixture
-def get_conditioner_response(faker) -> dict[str, str]:
-    yield {
+def get_conditioner_response() -> dict[str, Any]:
+    return {
         "Type": "EF",
         "Name": "Зал",
         "Updated": "1634283385",
@@ -84,4 +86,29 @@ def get_conditioner_response(faker) -> dict[str, str]:
         "Status": "3701",
         "LastStatus": "1100",
         "Functions": [],
+    }
+
+
+@pytest.fixture
+def get_media_sources() -> dict[str, Any]:
+    return {
+        "Type": "toggle",
+        "Signals": [
+            {"Operand": "20DFF00F", "Protocol": "01"},
+            {"Operand": "20DF5AA5", "Protocol": "01"},
+            {"Operand": "20DF639C", "Protocol": "01"},
+        ],
+    }
+
+
+@pytest.fixture
+def get_no_media_sources() -> dict[str, str | list[Any]]:
+    return {"Type": "toggle", "Signals": []}
+
+
+@pytest.fixture
+def item_not_exist_error() -> dict[str, str]:
+    return {
+        "success": "false",
+        "Message": "Item didn't exists",
     }

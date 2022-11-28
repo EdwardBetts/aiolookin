@@ -8,20 +8,16 @@ import logging
 import re
 import socket
 from enum import Enum
-from typing import Any, Callable, Final
+from typing import TYPE_CHECKING, Any, Callable, Final
 
-from aiohttp import (
-    ClientResponse,
-    ClientSession,
-    ClientTimeout,
-    ServerDisconnectedError,
-)
+from aiohttp import ClientSession, ClientTimeout, ServerDisconnectedError
 
 from .const import (
     COMMAND_TO_CODE,
     DEVICE_INFO_URL,
     DEVICES_INFO_URL,
     INFO_URL,
+    MEDIA_SOURCE_INFO_URL,
     METEO_SENSOR_URL,
     SEND_IR_COMMAND,
     SEND_IR_COMMAND_PRONTOHEX,
@@ -32,12 +28,16 @@ from .error import NoUsableService
 from .models import (
     Climate,
     Device,
+    MediaSource,
     MeteoSensor,
     Remote,
     UDPCommand,
     UDPCommandType,
     UDPEvent,
 )
+
+if TYPE_CHECKING:
+    from aiohttp import ClientResponse
 
 LOOKIN_PORT: Final = 61201
 
@@ -55,7 +55,7 @@ class IRFormat(Enum):
     ProntoHEX = "prontohex"
 
 
-def validate_response(response: ClientResponse) -> None:
+def validate_response(response: "ClientResponse") -> None:
     if response.status not in (200, 201, 204):
         raise NoUsableService
 
@@ -186,7 +186,7 @@ async def start_lookin_udp(
         lambda: LookinUDPProtocol(loop, subscriptions, device_id),  # type: ignore
         sock=_create_udp_socket(),
     )
-    return protocol.stop  # type: ignore
+    return protocol.stop
 
 
 class LookInHttpProtocol:
@@ -194,7 +194,7 @@ class LookInHttpProtocol:
         self._api_uri = api_uri
         self._session = session
 
-    async def _request(self, method: str, url: str, **kwargs: Any) -> ClientResponse:
+    async def _request(self, method: str, url: str, **kwargs: Any) -> "ClientResponse":  # type: ignore
         """Handle a request that may need to retry on disconnect."""
         for attempt in range(2):
             try:
@@ -212,11 +212,11 @@ class LookInHttpProtocol:
                     continue
                 raise
 
-    async def _get(self, url: str) -> ClientResponse:
+    async def _get(self, url: str) -> "ClientResponse":
         """Handle a get that may need to retry on disconnect."""
         return await self._request("GET", url)
 
-    async def _post(self, url: str, data: Any) -> ClientResponse:
+    async def _post(self, url: str, data: Any) -> "ClientResponse":
         """Handle a get that may need to retry on disconnect."""
         return await self._request("POST", url, data=data)
 
@@ -273,7 +273,6 @@ class LookInHttpProtocol:
             raise ValueError(f"{command} this is the invalid command")
 
         url = f"{self._api_uri}{SEND_IR_COMMAND}"
-
         response = await self._get(
             url=url.format(uuid=uuid, command=code, signal=signal),
         )
@@ -291,11 +290,24 @@ class LookInHttpProtocol:
 
         validate_response(response)
 
-    async def update_conditioner(self, climate: Climate) -> None:
+    async def update_conditioner(self, uuid: str, status: str) -> None:
         """Update the conditioner from a Climate object."""
         url = f"{self._api_uri}{UPDATE_CLIMATE_URL}"
         response = await self._get(
-            url=url.format(extra=climate.extra, status=climate.to_status),
+            url=url.format(uuid=uuid, status=status),
         )
 
         validate_response(response)
+
+    async def get_media_sources(self, uuid: str) -> list[MediaSource]:
+        url = f"{self._api_uri}{MEDIA_SOURCE_INFO_URL}"
+        response = await self._get(
+            url=url.format(uuid=uuid),
+        )
+
+        validate_response(response)
+        payload = await response.json()
+
+        signals = payload.get("Signals")
+
+        return [MediaSource(signal) for signal in signals]

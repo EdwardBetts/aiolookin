@@ -1,10 +1,10 @@
 import pytest
 from aiohttp import web
 
+from aiolookin.const import COMMAND_TO_CODE, UPDATE_CLIMATE_URL
 from aiolookin.error import NoUsableService
-from aiolookin.models import Climate, Device, MeteoSensor, Remote
+from aiolookin.models import Climate, Device, MediaSource, MeteoSensor, Remote
 from aiolookin.protocol import IRFormat
-from aiolookin.const import COMMAND_TO_CODE
 
 
 class TestGetInfo:
@@ -26,7 +26,7 @@ class TestGetInfo:
 
     async def test_timeout(self, aiohttp_client, lookin_http_protocol):
         async def handler(_):
-            raise web.HTTPRequestTimeout()
+            return web.Response(status=408)
 
         app = web.Application()
         app.router.add_get("/device", handler)
@@ -53,7 +53,7 @@ class TestUpdateDeviceName:
 
     async def test_timeout(self, aiohttp_client, lookin_http_protocol):
         async def handler(_):
-            raise web.HTTPRequestTimeout()
+            return web.Response(status=408)
 
         app = web.Application()
         app.router.add_post("/device", handler)
@@ -84,7 +84,7 @@ class TestGetMeteoSensor:
 
     async def test_timeout(self, aiohttp_client, lookin_http_protocol):
         async def handler(_):
-            raise web.HTTPRequestTimeout()
+            return web.Response(status=408)
 
         app = web.Application()
         app.router.add_get("/sensors/meteo", handler)
@@ -115,7 +115,7 @@ class TestGetDevices:
 
     async def test_timeout(self, aiohttp_client, lookin_http_protocol):
         async def handler(_):
-            raise web.HTTPRequestTimeout()
+            return web.Response(status=408)
 
         app = web.Application()
         app.router.add_get("/data", handler)
@@ -148,7 +148,7 @@ class TestGetDevice:
 
     async def test_timeout(self, aiohttp_client, lookin_http_protocol):
         async def handler(_):
-            raise web.HTTPRequestTimeout()
+            return web.Response(status=408)
 
         _uuid = "49C2"
 
@@ -183,7 +183,7 @@ class TestGetConditioner:
 
     async def test_timeout(self, aiohttp_client, lookin_http_protocol):
         async def handler(_):
-            raise web.HTTPRequestTimeout()
+            return web.Response(status=408)
 
         _uuid = "49C2"
 
@@ -217,7 +217,7 @@ class TestGetRemote:
 
     async def test_timeout(self, aiohttp_client, lookin_http_protocol):
         async def handler(_):
-            raise web.HTTPRequestTimeout()
+            return web.Response(status=408)
 
         _uuid = "49C2"
 
@@ -261,9 +261,7 @@ class TestSendCommand:
         code = COMMAND_TO_CODE.get(command)
 
         app = web.Application()
-        app.router.add_get(
-            f"/commands/ir/localremote/{_uuid}{code}{signal}", handler
-        )
+        app.router.add_get(f"/commands/ir/localremote/{_uuid}{code}{signal}", handler)
         test_client = await aiohttp_client(app)
 
         protocol = lookin_http_protocol(test_client)
@@ -272,7 +270,7 @@ class TestSendCommand:
 
     async def test_timeout(self, aiohttp_client, lookin_http_protocol, faker):
         async def handler(_):
-            raise web.HTTPRequestTimeout()
+            return web.Response(status=408)
 
         _uuid = "49C2"
         signal = faker.random.choice(["FF", "01"])
@@ -333,7 +331,7 @@ class TestSendIR:
     )
     async def test_timeout(self, ir_format, url, aiohttp_client, lookin_http_protocol):
         async def handler(_):
-            return web.HTTPRequestTimeout()
+            return web.Response(status=408)
 
         codes = "9024 -4512 564 -564 564"
 
@@ -351,7 +349,7 @@ class TestSendIR:
         self, url, aiohttp_client, lookin_http_protocol, faker
     ):
         async def handler(_):
-            return web.HTTPRequestTimeout()
+            return web.Response(status=408)
 
         codes = "9024 -4512 564 -564 564"
         ir_format = faker.word()
@@ -374,32 +372,94 @@ class TestUpdateConditioner:
             return web.json_response({"success": "true"})
 
         climate = Climate(get_conditioner_response)
+        _uuid = "49C2"
+        status = climate.to_status
 
         app = web.Application()
         app.router.add_get(
-            f"/commands/ir/ac/{climate.extra}{climate.to_status}", handler
+            UPDATE_CLIMATE_URL.format(uuid=_uuid, status=status), handler
         )
         test_client = await aiohttp_client(app)
 
         protocol = lookin_http_protocol(test_client)
 
-        await protocol.update_conditioner(climate=climate)
+        await protocol.update_conditioner(uuid=_uuid, status=status)
 
     async def test_timeout(
         self, aiohttp_client, lookin_http_protocol, get_conditioner_response
     ):
         async def handler(_):
-            return web.HTTPRequestTimeout()
+            return web.Response(status=408)
 
         climate = Climate(get_conditioner_response)
+        _uuid = "49C2"
+        status = climate.to_status
 
         app = web.Application()
         app.router.add_get(
-            f"/commands/ir/ac/{climate.extra}{climate.to_status}", handler
+            UPDATE_CLIMATE_URL.format(uuid=_uuid, status=status), handler
         )
         test_client = await aiohttp_client(app)
 
         protocol = lookin_http_protocol(test_client)
 
         with pytest.raises(NoUsableService):
-            await protocol.update_conditioner(climate=climate)
+            await protocol.update_conditioner(uuid=_uuid, status=status)
+
+
+class TestGetMediaSources:
+    async def test_successful(
+        self, aiohttp_client, lookin_http_protocol, get_media_sources
+    ):
+        async def handler(_):
+            return web.json_response(get_media_sources)
+
+        _uuid = "49C2"
+
+        app = web.Application()
+        app.router.add_get(f"/data/{_uuid}/mode", handler)
+        test_client = await aiohttp_client(app)
+
+        protocol = lookin_http_protocol(test_client)
+
+        signals = await protocol.get_media_sources(uuid=_uuid)
+
+        assert isinstance(signals, list)
+        for signal in signals:
+            assert isinstance(signal, MediaSource)
+
+    async def test_no_media_sources(
+        self, aiohttp_client, lookin_http_protocol, get_no_media_sources
+    ):
+        async def handler(_):
+            return web.json_response(get_no_media_sources)
+
+        _uuid = "49C2"
+
+        app = web.Application()
+        app.router.add_get(f"/data/{_uuid}/mode", handler)
+        test_client = await aiohttp_client(app)
+
+        protocol = lookin_http_protocol(test_client)
+
+        signals = await protocol.get_media_sources(uuid=_uuid)
+
+        assert isinstance(signals, list)
+        assert not signals
+
+    async def test_error(
+        self, aiohttp_client, lookin_http_protocol, item_not_exist_error
+    ):
+        async def handler(_) -> web.Response:
+            return web.json_response(text=item_not_exist_error, status=400)
+
+        _uuid = "49C2"
+
+        app = web.Application()
+        app.router.add_get(f"/data/{_uuid}/mode", handler)
+        test_client = await aiohttp_client(app)
+
+        protocol = lookin_http_protocol(test_client)
+
+        with pytest.raises(NoUsableService):
+            await protocol.get_media_sources(uuid=_uuid)
