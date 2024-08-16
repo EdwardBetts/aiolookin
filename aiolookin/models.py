@@ -189,7 +189,7 @@ class UDPCommand(Enum):
 class UDPEvent:
     type: UDPCommandType = field(init=False)
     device_id: str
-    commnd: UDPCommand
+    command: UDPCommand
     type_code: InitVar[str]
     data_package: InitVar[str]
     uuid: str | None = None

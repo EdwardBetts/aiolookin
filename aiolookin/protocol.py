@@ -157,7 +157,7 @@ class LookinUDPProtocol:
         if command == UDPCommand.updated.value:
             return UDPEvent(
                 device_id=device_id,
-                commnd=UDPCommand.updated,
+                command=UDPCommand.updated,
                 type_code=type_code,
                 data_package=data_package,
             )
